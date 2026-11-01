@@ -12,13 +12,13 @@ const router = Router();
 const appleLoginSchema = z.object({
     identityToken: z.string().min(1),
     authorizationCode: z.string().min(1),
-    email: z.string().email().optional(),
+    email: z.email().optional(),
     fullName: z.string().max(100).optional(),
     region: z.string().max(10).optional(),
 });
 
 const guestLoginSchema = z.object({
-    guestId: z.string().uuid().optional(),
+    guestId: z.guid().optional(),
     region: z.string().max(10).optional(),
 });
 
@@ -36,7 +36,7 @@ router.post('/apple', authLimiter, async (req: Request, res: Response) => {
             return res.status(400).json({
                 error: 'InvalidRequest',
                 message: '缺少必要的认证信息',
-                details: parseResult.error.flatten().fieldErrors,
+                details: z.flattenError(parseResult.error).fieldErrors,
             });
         }
 

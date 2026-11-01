@@ -120,7 +120,7 @@ router.post('/verify-purchase', async (req: Request, res: Response) => {
             return res.status(400).json({
                 error: 'InvalidRequest',
                 message: '缺少交易信息',
-                details: parseResult.error.flatten().fieldErrors,
+                details: z.flattenError(parseResult.error).fieldErrors,
             });
         }
 
@@ -221,7 +221,7 @@ router.post('/sync-subscription', async (req: Request, res: Response) => {
             return res.status(400).json({
                 error: 'InvalidRequest',
                 message: '缺少订阅信息',
-                details: parseResult.error.flatten().fieldErrors,
+                details: z.flattenError(parseResult.error).fieldErrors,
             });
         }
 

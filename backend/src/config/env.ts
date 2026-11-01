@@ -56,7 +56,7 @@ const parseEnv = () => {
         return envSchema.parse(process.env);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            const missing = error.errors.map(e => `  - ${e.path.join('.')}: ${e.message}`).join('\n');
+            const missing = error.issues.map(e => `  - ${e.path.join('.')}: ${e.message}`).join('\n');
             console.error('❌ 环境变量配置错误:\n' + missing);
             console.error('\n请参考 env.example.txt 配置 .env 文件');
             process.exit(1);
