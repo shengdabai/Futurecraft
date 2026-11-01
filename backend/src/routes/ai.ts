@@ -67,7 +67,7 @@ router.post('/soul-scan', async (req: Request, res: Response) => {
             return res.status(400).json({
                 error: 'InvalidRequest',
                 message: '请求参数无效',
-                details: parseResult.error.flatten().fieldErrors,
+                details: z.flattenError(parseResult.error).fieldErrors,
             });
         }
         const { name, major, hobbies, hiddenTalent, language } = parseResult.data;
@@ -137,7 +137,7 @@ router.post('/simulation', async (req: Request, res: Response) => {
             return res.status(400).json({
                 error: 'InvalidRequest',
                 message: '请求参数无效',
-                details: parseResult.error.flatten().fieldErrors,
+                details: z.flattenError(parseResult.error).fieldErrors,
             });
         }
         const { jobTitle, language } = parseResult.data;
@@ -186,7 +186,7 @@ router.post('/simulation/evaluate', async (req: Request, res: Response) => {
             return res.status(400).json({
                 error: 'InvalidRequest',
                 message: '请求参数无效',
-                details: parseResult.error.flatten().fieldErrors,
+                details: z.flattenError(parseResult.error).fieldErrors,
             });
         }
         const { jobTitle, scenario, choice, language } = parseResult.data;
@@ -229,7 +229,7 @@ router.post('/skill-tree', async (req: Request, res: Response) => {
             return res.status(400).json({
                 error: 'InvalidRequest',
                 message: '请求参数无效',
-                details: parseResult.error.flatten().fieldErrors,
+                details: z.flattenError(parseResult.error).fieldErrors,
             });
         }
         const { jobTitle, language } = parseResult.data;
@@ -281,7 +281,7 @@ router.post('/chat', async (req: Request, res: Response) => {
             return res.status(400).json({
                 error: 'InvalidRequest',
                 message: '请求参数无效',
-                details: parseResult.error.flatten().fieldErrors,
+                details: z.flattenError(parseResult.error).fieldErrors,
             });
         }
         const { history, message, jobTitle, jobDescription, isBossMode, language } = parseResult.data;
@@ -346,7 +346,7 @@ router.post('/tts', async (req: Request, res: Response) => {
             return res.status(400).json({
                 error: 'InvalidRequest',
                 message: '请求参数无效',
-                details: parseResult.error.flatten().fieldErrors,
+                details: z.flattenError(parseResult.error).fieldErrors,
             });
         }
         const { text, language } = parseResult.data;

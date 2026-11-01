@@ -7,7 +7,7 @@
 创建 `.env.local` 文件：
 
 ```bash
-cd /Users/tonysheng/Desktop/编程/高考复习
+cd /path/to/高考复习
 
 cat > .env.local << EOF
 GEMINI_API_KEY=你的Gemini_API_Key
