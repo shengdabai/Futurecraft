@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { JobOption, SimulationStep, SimulationResult, Language } from '../types';
 import { generateSimulationScenario, evaluateSimulationChoice } from '../services/apiService';
 import { Button } from './Button';
@@ -23,34 +23,70 @@ export const SimulationView: React.FC<SimulationViewProps> = ({ job, onComplete,
     calculating: isZh ? "正在推演结果..." : "Calculating Outcome...",
     feedback: isZh ? "系统反馈" : "System Feedback",
     replay: isZh ? "重玩副本" : "Replay",
-    unlock: isZh ? "解锁技能树" : "Unlock Skill Tree"
+    unlock: isZh ? "解锁技能树" : "Unlock Skill Tree",
+    error: isZh ? "请求失败，请重试。" : "Request failed. Please try again."
   };
 
   const [step, setStep] = useState<'intro' | 'scenario' | 'result'>('intro');
   const [loading, setLoading] = useState(false);
   const [scenarioData, setScenarioData] = useState<SimulationStep | null>(null);
   const [resultData, setResultData] = useState<SimulationResult | null>(null);
+  const [error, setError] = useState(false);
+  const request = useRef({ id: 0, pending: false });
+
+  useEffect(() => {
+    request.current.id++;
+    request.current.pending = false;
+    setStep('intro');
+    setLoading(false);
+    setError(false);
+    setScenarioData(null);
+    setResultData(null);
+    return () => {
+      request.current.id++;
+      request.current.pending = false;
+    };
+  }, [job.title, language]);
 
   const startSim = async () => {
+    if (request.current.pending) return;
+    const requestId = ++request.current.id;
+    request.current.pending = true;
     setLoading(true);
+    setError(false);
     try {
       const data = await generateSimulationScenario(job.title, language);
+      if (requestId !== request.current.id) return;
       setScenarioData(data);
       setStep('scenario');
+    } catch {
+      if (requestId === request.current.id) setError(true);
     } finally {
-      setLoading(false);
+      if (requestId === request.current.id) {
+        request.current.pending = false;
+        setLoading(false);
+      }
     }
   };
 
   const handleChoice = async (choice: string) => {
-    if (!scenarioData) return;
+    if (!scenarioData || request.current.pending) return;
+    const requestId = ++request.current.id;
+    request.current.pending = true;
     setLoading(true);
+    setError(false);
     try {
       const result = await evaluateSimulationChoice(job.title, scenarioData.scenario, choice, language);
+      if (requestId !== request.current.id) return;
       setResultData(result);
       setStep('result');
+    } catch {
+      if (requestId === request.current.id) setError(true);
     } finally {
-      setLoading(false);
+      if (requestId === request.current.id) {
+        request.current.pending = false;
+        setLoading(false);
+      }
     }
   };
 
@@ -71,6 +107,7 @@ export const SimulationView: React.FC<SimulationViewProps> = ({ job, onComplete,
         <Button onClick={startSim} isLoading={loading} className="bg-purple-600 hover:bg-purple-500 px-8 py-4 text-lg border-none">
           {t.start}
         </Button>
+        {error && <p role="alert">{t.error}</p>}
       </div>
     );
   }
@@ -103,6 +140,7 @@ export const SimulationView: React.FC<SimulationViewProps> = ({ job, onComplete,
             ))}
           </div>
           {loading && <div className="mt-4 text-center text-slate-500 animate-pulse">{t.calculating}</div>}
+          {error && <p role="alert">{t.error}</p>}
         </div>
       </div>
     );

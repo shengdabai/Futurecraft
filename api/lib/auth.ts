@@ -8,7 +8,13 @@ import bcrypt from 'bcryptjs';
 import type { VercelRequest } from '@vercel/node';
 
 // JWT 密钥，从环境变量获取
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.trim().length < 32) {
+    throw new Error('JWT_SECRET must contain at least 32 characters');
+  }
+  return secret;
+}
 const JWT_EXPIRES_IN = '7d'; // Token 有效期 7 天
 const SALT_ROUNDS = 10; // bcrypt 加密轮数
 
@@ -28,7 +34,7 @@ export interface JWTPayload {
  * @returns JWT Token 字符串
  */
 export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(payload, getJwtSecret(), { algorithm: 'HS256', expiresIn: JWT_EXPIRES_IN });
 }
 
 /**
@@ -38,7 +44,11 @@ export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string 
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const payload = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] });
+    if (typeof payload === 'string' || typeof payload.userId !== 'string' || !payload.userId
+      || typeof payload.username !== 'string' || !payload.username
+      || typeof payload.exp !== 'number') return null;
+    return payload as JWTPayload;
   } catch (error) {
     return null;
   }
@@ -51,7 +61,7 @@ export function verifyToken(token: string): JWTPayload | null {
  */
 export function extractToken(req: VercelRequest): string | null {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
     return null;
   }
   return authHeader.slice(7);
@@ -94,9 +104,9 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * @param username - 用户名
  * @returns 是否有效
  */
-export function isValidUsername(username: string): boolean {
+export function isValidUsername(username: unknown): username is string {
   // 用户名: 3-20 字符，只允许字母、数字、下划线
-  return /^[a-zA-Z0-9_]{3,20}$/.test(username);
+  return typeof username === 'string' && /^[a-zA-Z0-9_]{3,20}$/.test(username);
 }
 
 /**
@@ -104,9 +114,9 @@ export function isValidUsername(username: string): boolean {
  * @param password - 密码
  * @returns 是否有效
  */
-export function isValidPassword(password: string): boolean {
+export function isValidPassword(password: unknown): password is string {
   // 密码: 至少 6 个字符
-  return password.length >= 6;
+  return typeof password === 'string' && password.length >= 6 && Buffer.byteLength(password, 'utf8') <= 72;
 }
 
 

@@ -4,9 +4,9 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDatabase, generateId } from '../../lib/db';
-import { generateToken, sendSuccess, hashPassword } from '../../lib/auth';
-import { sendError } from '../../lib/response';
+import { getDatabase, generateId } from '../lib/db';
+import { generateToken, hashPassword } from '../lib/auth';
+import { sendError, sendSuccess } from '../lib/response';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
@@ -17,8 +17,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const userId = generateId();
         const username = `游客${Date.now()}`;
         const password = generateId(); // 随机密码，游客不需要记住
-        const createdAt = new Date().toISOString();
-
         const db = getDatabase();
         const passwordHash = await hashPassword(password); // Assuming hashPassword is available
 

@@ -6,13 +6,13 @@
 // 敏感词模式工厂（每次调用返回新的 RegExp，避免 g flag 状态问题）
 const sensitivePatternFactories: ReadonlyArray<() => RegExp> = [
     // 政治敏感
-    () => /\b(暴力|恐怖|极端)\b/gi,
+    () => /(暴力|恐怖|极端)/g,
     // 色情
-    () => /\b(色情|淫秽|裸体)\b/gi,
+    () => /(色情|淫秽|裸体)/g,
     // 歧视
-    () => /\b(种族歧视|性别歧视|仇恨)\b/gi,
+    () => /(种族歧视|性别歧视|仇恨)/g,
     // 违法
-    () => /\b(毒品|赌博|诈骗)\b/gi,
+    () => /(毒品|赌博|诈骗)/g,
 ];
 
 // 用于替换敏感内容的占位符
@@ -30,16 +30,24 @@ export interface ContentCheckResult {
 export function checkContent(text: string): ContentCheckResult {
     const flaggedContent: string[] = [];
     let sanitizedText = text;
+    // Exempt only the matched phrase, never the rest of the message.
+    const safeRanges = Array.from(text.matchAll(/反诈骗|防诈骗|禁毒|恐怖片|恐怖电影|极端天气/g), match => ({
+        start: match.index!, end: match.index! + match[0].length,
+    }));
+    const replacements: Array<{ start: number; end: number }> = [];
 
     for (const createPattern of sensitivePatternFactories) {
-        // 每次创建新的 RegExp 实例，避免 g flag lastIndex 状态问题
-        const matchPattern = createPattern();
-        const replacePattern = createPattern();
-        const matches = text.match(matchPattern);
-        if (matches) {
-            flaggedContent.push(...matches);
-            sanitizedText = sanitizedText.replace(replacePattern, REDACTED);
+        for (const match of text.matchAll(createPattern())) {
+            const start = match.index!;
+            const end = start + match[0].length;
+            if (!safeRanges.some(range => start >= range.start && end <= range.end)) {
+                flaggedContent.push(match[0]);
+                replacements.push({ start, end });
+            }
         }
+    }
+    for (const { start, end } of replacements.sort((a, b) => b.start - a.start)) {
+        sanitizedText = sanitizedText.slice(0, start) + REDACTED + sanitizedText.slice(end);
     }
 
     return {
@@ -85,6 +93,9 @@ export function sanitizeAIOutput(output: string): string {
 export function isUrlSafe(url: string): boolean {
     try {
         const parsedUrl = new URL(url);
+        if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+            return false;
+        }
         const safeHosts = [
             'github.com',
             'youtube.com',

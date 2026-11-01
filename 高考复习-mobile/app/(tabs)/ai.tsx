@@ -18,7 +18,7 @@ import * as api from '@/services/api';
 import { SUBJECTS } from '@/constants/api';
 
 export default function AIScreen() {
-  const [selectedSubject, setSelectedSubject] = useState(SUBJECTS[0]);
+  const [selectedSubject, setSelectedSubject] = useState<typeof SUBJECTS[number]>(SUBJECTS[0]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);

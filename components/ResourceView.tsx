@@ -20,23 +20,39 @@ export const ResourceView: React.FC<ResourceViewProps> = ({ job, onStartTutor, l
     subtitle: isZh ? "点亮以下节点，您将从菜鸟进化为职业玩家。" : "Unlock these nodes to evolve from Noob to Pro.",
     startTutor: isZh ? "准备好练级了吗？" : "Ready to level up?",
     activateTutor: isZh ? "激活 AI 导师" : "Activate AI Tutor",
-    tutorDesc: isZh ? "激活专属 AI 导师，开始苏格拉底式教学。" : "Activate your mentor for Socratic learning."
+    tutorDesc: isZh ? "激活专属 AI 导师，开始苏格拉底式教学。" : "Activate your mentor for Socratic learning.",
+    error: isZh ? "未能生成技能树，请重试。" : "Unable to generate the skill tree. Please retry.",
+    retry: isZh ? "重试" : "Retry"
   };
 
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError(false);
+    setResources([]);
     const fetchResources = async () => {
       try {
         const data = await generateSkillTree(job.title, language);
+        if (!active) return;
+        if (!Array.isArray(data) || data.length === 0) {
+          setError(true);
+          return;
+        }
         setResources(data);
+      } catch {
+        if (active) setError(true);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     fetchResources();
-  }, [job, language]);
+    return () => { active = false; };
+  }, [job.title, language, retryCount]);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -54,6 +70,15 @@ export const ResourceView: React.FC<ResourceViewProps> = ({ job, onStartTutor, l
         <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-6"></div>
         <h2 className="text-2xl text-white font-bold tracking-tight">{t.loadingTitle}</h2>
         <p className="text-slate-400 mt-2">{t.loadingDesc}</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto text-center">
+        <p role="alert">{t.error}</p>
+        <Button onClick={() => setRetryCount(count => count + 1)}>{t.retry}</Button>
       </div>
     );
   }

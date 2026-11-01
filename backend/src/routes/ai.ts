@@ -310,7 +310,7 @@ router.post('/chat', async (req: Request, res: Response) => {
         const { message: responseMessage, usage } = await geminiService.tutorChat({
             history: history || [],
             message,
-            jobTitle,
+            jobTitle: jobTitle ?? '',
             jobDescription,
             isBossMode: isBossMode || false,
             language: language || 'zh',
