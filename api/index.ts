@@ -1,14 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';
 
-// In-memory storage
-const users = new Map();
-const sessions = new Map();
-let userIdCounter = 1;
+// Demo storage is process-local; persistent accounts require a canonical backend.
+interface User { id: string; username: string; type: 'regular' | 'guest'; salt?: string; passwordHash?: Buffer; credits?: number }
+const users = new Map<string, User>();
+const sessions = new Map<string, { userId: string; expiresAt: number }>();
+const derivePassword = promisify(scrypt);
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-// Simple token gen
 function generateToken(userId: string) {
-  const token = `token_${Date.now()}_${userId}`;
-  sessions.set(token, { userId, createdAt: Date.now() });
+  const token = randomBytes(32).toString('base64url');
+  for (const [value, session] of sessions) {
+    if (session.expiresAt <= Date.now()) sessions.delete(value);
+  }
+  sessions.set(token, { userId, expiresAt: Date.now() + SESSION_TTL_MS });
   return token;
 }
 
@@ -37,9 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const { path } = req.query;
-  const endpoint = Array.isArray(path) ? path.join('/') : path || '';
-
-  console.log(`Incoming request: ${req.method} /api/${endpoint}`);
+  const endpoint = (Array.isArray(path) ? path.join('/') : path)
+    || new URL(req.url || '/', 'http://localhost').pathname.replace(/^\/api\/?/, '');
 
   try {
     // Health check
@@ -51,21 +56,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Simple registration - just accept any username
     if (endpoint === 'register' && req.method === 'POST') {
-      const { username, password } = req.body;
+      const { username, password } = req.body || {};
 
-      if (!username || !password) {
+      if (typeof username !== 'string' || !/^[a-zA-Z0-9_]{3,20}$/.test(username)
+        || typeof password !== 'string' || password.length < 6 || password.length > 1024) {
         return res.status(400).json({
           success: false,
           error: { code: 'INVALID_REQUEST', message: '用户名和密码是必填项' }
         });
       }
 
-      const userId = `user_${userIdCounter++}`;
-      const userData = {
+      const salt = randomBytes(16).toString('hex');
+      const passwordHash = await derivePassword(password, salt, 64) as Buffer;
+      // Check after hashing as well, so simultaneous registrations cannot duplicate a name.
+      if ([...users.values()].some(user => user.username === username)) {
+        return res.status(409).json({ success: false, error: { code: 'USERNAME_EXISTS', message: '用户名已存在' } });
+      }
+      const userId = randomUUID();
+      const userData: User = {
         username,
-        password,
+        salt,
+        passwordHash,
         id: userId,
         type: 'regular'
       };
@@ -84,18 +96,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Simple login
     if (endpoint === 'login' && req.method === 'POST') {
-      const { username, password } = req.body;
+      const { username, password } = req.body || {};
 
-      if (!username || !password) {
+      if (typeof username !== 'string' || typeof password !== 'string' || !password || password.length > 1024) {
         return res.status(400).json({
           success: false,
           error: { code: 'INVALID_REQUEST', message: '用户名和密码是必填项' }
         });
       }
 
-      // Find user by username (not ideal but works for demo)
       let userData = null;
       for (const [id, user] of users) {
         if (user.username === username) {
@@ -104,8 +114,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      if (!userData || userData.password !== password) {
-        return res.status(400).json({
+      // Derive a dummy hash too, to avoid a fast path exposing unknown usernames.
+      const candidate = await derivePassword(password, userData?.salt || 'unknown-user-salt', 64) as Buffer;
+      if (!userData?.passwordHash || !timingSafeEqual(userData.passwordHash, candidate)) {
+        return res.status(401).json({
           success: false,
           error: { code: 'INVALID_CREDENTIALS', message: '用户名或密码错误' }
         });
@@ -126,10 +138,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Guest registration
     if (endpoint === 'auth/guest' && req.method === 'POST') {
-      const userId = `guest_${Date.now()}`;
-      const guestName = `游客${userIdCounter++}`;
+      const userId = `guest_${randomUUID()}`;
+      const guestName = `游客${randomBytes(6).toString('hex')}`;
 
-      const guestData = {
+      const guestData: User = {
         username: guestName,
         id: userId,
         type: 'guest',
@@ -150,47 +162,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Default soul scan
-    if (endpoint === 'ai/soul-scan' && req.method === 'POST') {
-      const { language } = req.body || {};
-      const isCN = language === 'zh';
-
-      return res.status(200).json({
-        stats: {
-          creativity: 75,
-          logic: 80,
-          leadership: 60,
-          stamina: 70,
-        },
-        archetype: isCN ? "探索者型" : "Explorer Type",
-        careers: [
-          {
-            title: isCN ? "数据分析师" : "Data Analyst",
-            description: isCN ? "适合逻辑思维强的你" : "Perfect for logical thinking",
-            matchScore: 85,
-            growth: 90,
-            salary: "15-25K"
-          },
-          {
-            title: isCN ? "产品经理" : "Product Manager",
-            description: isCN ? "综合能力和创新思维匹配" : "Matches comprehensive skills",
-            matchScore: 78,
-            growth: 88,
-            salary: "18-30K"
-          }
-        ]
+    if (endpoint.startsWith('ai/') && req.method === 'POST') {
+      return res.status(503).json({
+        success: false,
+        error: { code: 'SERVICE_UNAVAILABLE', message: 'AI 后端尚未连接' },
       });
     }
 
     // Get user info (basic)
     if (endpoint === 'auth/me' && req.method === 'GET') {
-      const auth = req.headers.authorization?.replace('Bearer ', '');
+      const header = req.headers.authorization;
+      const auth = typeof header === 'string' && header.startsWith('Bearer ') ? header.slice(7) : '';
       if (!auth) {
         return res.status(401).json({ success: false, error: { message: '需要认证' } });
       }
 
       const session = sessions.get(auth);
-      if (!session) {
+      if (!session || session.expiresAt <= Date.now()) {
+        sessions.delete(auth);
         return res.status(401).json({ success: false, error: { message: '无效令牌' } });
       }
 
@@ -217,10 +206,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
   } catch (error: any) {
-    console.error('API Error:', error);
+    console.error('API request failed');
     return res.status(500).json({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: error.message || '服务器内部错误' }
+      error: { code: 'INTERNAL_ERROR', message: '服务器内部错误' }
     });
   }
 }

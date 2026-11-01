@@ -17,7 +17,7 @@ import * as api from '@/services/api';
 import { SUBJECTS } from '@/constants/api';
 
 export default function NotesScreen() {
-  const [selectedSubject, setSelectedSubject] = useState(SUBJECTS[0]);
+  const [selectedSubject, setSelectedSubject] = useState<typeof SUBJECTS[number]>(SUBJECTS[0]);
   const [query, setQuery] = useState('');
   const [result, setResult] = useState<{ content: string; source: string } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
