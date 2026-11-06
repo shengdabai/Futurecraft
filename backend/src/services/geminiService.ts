@@ -253,7 +253,7 @@ export async function evaluateSimulationChoice(data: {
 export async function generateSkillTree(data: {
     jobTitle: string;
     language: 'zh' | 'en';
-}): Promise<{ result: object[]; usage: TokenUsage }> {
+}): Promise<{ result: Array<{ url?: string; [key: string]: unknown }>; usage: TokenUsage }> {
     const isZh = data.language === 'zh';
 
     const prompt = `
@@ -285,7 +285,7 @@ export async function generateSkillTree(data: {
 export async function tutorChat(data: {
     history: Array<{ role: 'user' | 'model'; content: string }>;
     message: string;
-    jobTitle: string;
+    jobTitle?: string;
     jobDescription?: string;
     isBossMode: boolean;
     language: 'zh' | 'en';

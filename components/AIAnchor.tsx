@@ -68,7 +68,7 @@ export const AIAnchor: React.FC<AIAnchorProps> = ({ isPlaying }) => {
         height={340} 
         className="w-full h-full object-cover"
       />
-      <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+      <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
         <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-red-500 animate-pulse' : 'bg-slate-500'}`} />
         <span className="text-xs font-medium text-white tracking-wider uppercase">
           {isPlaying ? 'AI 主播直播中' : 'AI 主播待机中'}

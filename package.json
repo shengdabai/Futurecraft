@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build && npm run build:api",
     "build:api": "cd api && npm install",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

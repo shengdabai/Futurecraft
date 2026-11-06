@@ -116,7 +116,7 @@ const App: React.FC = () => {
             </button>
 
             {/* Step Indicator */}
-            <div className="hidden md:flex items-center space-x-1">
+            <div className="hidden lg:flex items-center space-x-1">
               {steps.map((step, idx) => {
                 const stepIndex = steps.findIndex(s => s.id === step.id);
                 const currentIndex = steps.findIndex(s => s.id === phase);

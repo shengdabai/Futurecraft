@@ -61,7 +61,7 @@ export const SimulationView: React.FC<SimulationViewProps> = ({ job, onComplete,
           <Terminal className="w-10 h-10 text-purple-400" />
         </div>
         <div>
-          <h1 className="text-4xl font-black text-white mb-4">{t.introTitle}</h1>
+          <h1 className="text-2xl sm:text-4xl font-black text-white mb-4">{t.introTitle}</h1>
           <p className="text-xl text-slate-300">
             {t.introDesc1} <span className="text-purple-400 font-mono font-bold">[{job.title}]</span> {t.introDesc2}
             <br />
@@ -118,7 +118,7 @@ export const SimulationView: React.FC<SimulationViewProps> = ({ job, onComplete,
 
         <h2 className="text-3xl font-bold text-white mb-2">{resultData.outcome}</h2>
         <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-500 mb-8">
-          {resultData.score}<span className="text-2xl align-top opacity-50">/100</span>
+          {resultData.score}<span className="text-2xl align-top">/100</span>
         </div>
 
         <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-xl mb-8 text-left">

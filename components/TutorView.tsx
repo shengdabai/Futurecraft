@@ -86,7 +86,7 @@ export const TutorView: React.FC<TutorViewProps> = ({ job, resources, language }
     <div className={`h-[calc(100vh-140px)] flex flex-col rounded-2xl overflow-hidden border shadow-2xl transition-all duration-500 ${isBossMode ? 'bg-red-950/30 border-red-600/50 shadow-red-900/20' : 'bg-slate-900 border-slate-700'}`}>
 
       {/* Header */}
-      <div className={`p-4 flex items-center justify-between border-b transition-colors duration-500 ${isBossMode ? 'bg-red-900/50 border-red-600/30' : 'bg-slate-800 border-slate-700'}`}>
+      <div className={`p-4 flex items-center justify-between gap-3 border-b transition-colors duration-500 ${isBossMode ? 'bg-red-900/50 border-red-600/30' : 'bg-slate-800 border-slate-700'}`}>
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold shadow-lg transition-all ${isBossMode ? 'bg-red-600 animate-pulse' : 'bg-indigo-600'}`}>
             {isBossMode ? <Skull className="w-6 h-6" /> : <Bot className="w-6 h-6" />}
@@ -103,7 +103,7 @@ export const TutorView: React.FC<TutorViewProps> = ({ job, resources, language }
 
         <button
           onClick={toggleBossMode}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-all ${isBossMode
+          className={`flex items-center gap-2 px-4 py-2 shrink-0 whitespace-nowrap rounded-lg text-sm font-bold border transition-all ${isBossMode
               ? 'bg-slate-900 text-slate-300 border-slate-600 hover:bg-slate-800'
               : 'bg-red-600/20 text-red-400 border-red-600/50 hover:bg-red-600/30'
             }`}

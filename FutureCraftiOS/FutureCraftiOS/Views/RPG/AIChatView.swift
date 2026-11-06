@@ -2,11 +2,11 @@ import SwiftUI
 
 struct AIChatView: View {
     let mode: String // "Tutor" or "Boss"
-    @State private var messages: [ChatMessage] = []
+    @State private var messages: [ViewChatMessage] = []
     @State private var inputText: String = ""
     @State private var isTyping: Bool = false
     
-    struct ChatMessage: Identifiable {
+    struct ViewChatMessage: Identifiable {
         let id = UUID()
         let text: String
         let isUser: Bool
@@ -87,13 +87,13 @@ struct AIChatView: View {
                     ? "Greetings. I am your career mentor. paradoxes in your logic detected? Let's discuss your path."
                     : "So, you think you have what it takes? Explain to me why I shouldn't fire you right now."
                 
-                messages.append(ChatMessage(text: initialText, isUser: false))
+                messages.append(ViewChatMessage(text: initialText, isUser: false))
             }
         }
     }
     
     func sendMessage() {
-        let userMessage = ChatMessage(text: inputText, isUser: true)
+        let userMessage = ViewChatMessage(text: inputText, isUser: true)
         messages.append(userMessage)
         let query = inputText
         inputText = ""
@@ -102,9 +102,17 @@ struct AIChatView: View {
         // Simulate AI Response
         Task {
             do {
-                let response = try await AIService.shared.chat(message: query, context: [:])
+                let context = ChatContext(
+                    jobTitle: mode == "Tutor" ? "Career exploration" : "Interview simulation",
+                    isBossMode: mode != "Tutor",
+                    history: messages.map {
+                        ChatMessage(role: $0.isUser ? "user" : "assistant", content: $0.text)
+                    },
+                    language: Locale.current.language.languageCode?.identifier ?? "en"
+                )
+                let response = try await AIService.shared.chat(message: query, context: context)
                 DispatchQueue.main.async {
-                    messages.append(ChatMessage(text: response, isUser: false))
+                    messages.append(ViewChatMessage(text: response.message, isUser: false))
                     isTyping = false
                 }
             } catch {

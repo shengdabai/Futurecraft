@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /pricing.html
+Disallow: /api/
+
+Sitemap: https://futurecraft.app/sitemap.xml

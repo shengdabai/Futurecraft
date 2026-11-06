@@ -207,7 +207,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ profile, careers, on
             </div>
             <Button
               onClick={handlePlayExplanation}
-              className="rounded-full w-12 h-12 p-0 flex items-center justify-center bg-white text-black hover:bg-cyan-400 border-none"
+              className="rounded-full! w-12 h-12 p-0 flex items-center justify-center bg-white text-black hover:bg-cyan-400 border-none"
               isLoading={isAudioLoading}
             >
               {isAudioLoading ? <Clock className="w-5 h-5 animate-spin" /> : isSpeaking ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}

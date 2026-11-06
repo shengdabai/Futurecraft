@@ -76,7 +76,7 @@ export const ResourceView: React.FC<ResourceViewProps> = ({ job, onStartTutor, l
               <div className="absolute left-6 md:left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-slate-900 border-2 border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
 
               {/* Card */}
-              <div className={`flex-1 ml-12 md:ml-0 ${isLeft ? 'md:text-right' : 'md:text-left'}`}>
+              <div className={`flex-1 min-w-0 ml-12 md:ml-0 ${isLeft ? 'md:text-right' : 'md:text-left'}`}>
                 <div className={`bg-slate-800/80 backdrop-blur border border-slate-700 p-6 rounded-2xl hover:border-indigo-500 transition-all group inline-block w-full md:w-[90%] relative overflow-hidden`}>
                   <div className={`absolute top-0 w-1 h-full bg-indigo-500 ${isLeft ? 'right-0 md:right-0 md:left-auto' : 'left-0'} opacity-0 group-hover:opacity-100 transition-opacity`}></div>
 
@@ -84,8 +84,8 @@ export const ResourceView: React.FC<ResourceViewProps> = ({ job, onStartTutor, l
                     <span className="p-2 bg-black/40 rounded-lg border border-slate-600 group-hover:border-indigo-500/50 transition-colors">
                       {getIcon(res.type)}
                     </span>
-                    <div className={`flex-1 ${isLeft ? 'text-right' : 'text-left'}`}>
-                      <h3 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">{res.title}</h3>
+                    <div className={`flex-1 min-w-0 ${isLeft ? 'md:text-right' : 'text-left'}`}>
+                      <h3 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors break-words">{res.title}</h3>
                     </div>
                   </div>
 

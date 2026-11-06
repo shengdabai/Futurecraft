@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import AuthenticationServices
+import UIKit
 
 /// 认证管理器
 /// 负责处理 Sign in with Apple、后端登录验证等

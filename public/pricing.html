@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FutureCraft — 定价方案 | 发现你的职业超能力</title>
+    <meta name="description" content="FutureCraft 提供 Free、Pro、Premium 三层定价，从免费 Soul Scan 到 1:1 职业咨询，满足不同阶段 Gen Z 职业探索需求。">
+    <link rel="canonical" href="https://futurecraft.vercel.app/pricing">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://futurecraft.vercel.app/pricing">
+    <meta property="og:title" content="FutureCraft 定价方案 — 发现你的职业超能力">
+    <meta property="og:description" content="从免费职业性格分析到 1:1 咨询，选择适合你的职业探索方案。">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+            background: #0a0a0a;
+            color: #e5e5e5;
+            line-height: 1.6;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+        nav { padding: 20px 0; border-bottom: 1px solid #1a1a1a; }
+        nav .container { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.25rem; font-weight: 700; color: #fff; }
+        .logo span { color: #06b6d4; }
+        .nav-links { display: flex; gap: 24px; }
+        .nav-links a { color: #a3a3a3; text-decoration: none; font-size: 0.9rem; }
+        .nav-links a:hover { color: #fff; }
+
+        .hero { padding: 80px 0 40px; text-align: center; }
+        .hero h1 {
+            font-size: 2.5rem; font-weight: 800; margin-bottom: 16px;
+            background: linear-gradient(135deg, #06b6d4, #a855f7);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p { color: #a3a3a3; font-size: 1.1rem; max-width: 500px; margin: 0 auto; }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            padding: 60px 0 100px;
+        }
+        .pricing-card {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 36px;
+            position: relative;
+            transition: border-color 0.2s;
+        }
+        .pricing-card:hover { border-color: #06b6d4; }
+        .pricing-card.featured {
+            border-color: #a855f7;
+            box-shadow: 0 0 60px rgba(168, 85, 247, 0.15);
+        }
+        .badge {
+            position: absolute;
+            top: -12px; left: 50%; transform: translateX(-50%);
+            background: #a855f7;
+            color: #fff;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .pricing-card h3 { font-size: 1.3rem; margin-bottom: 8px; color: #fff; }
+        .pricing-card .price {
+            font-size: 3rem; font-weight: 800; color: #fff; margin: 20px 0;
+        }
+        .pricing-card .price span { font-size: 1rem; font-weight: 400; color: #a3a3a3; }
+        .pricing-card ul { list-style: none; margin: 24px 0; }
+        .pricing-card li { padding: 10px 0; color: #a3a3a3; font-size: 0.95rem; border-bottom: 1px solid #1a1a1a; }
+        .pricing-card li:last-child { border-bottom: none; }
+        .pricing-card li::before { content: '✓ '; color: #34d399; font-weight: 700; }
+
+        .btn {
+            display: block; text-align: center; padding: 14px;
+            border-radius: 10px; font-size: 1rem; font-weight: 600;
+            text-decoration: none; transition: all 0.2s;
+        }
+        .btn-primary { background: #a855f7; color: #fff; }
+        .btn-primary:hover { background: #9333ea; transform: translateY(-2px); }
+        .btn-secondary { background: #1a1a1a; color: #e5e5e5; border: 1px solid #333; }
+        .btn-secondary:hover { border-color: #06b6d4; }
+
+        footer { padding: 40px 0; border-top: 1px solid #1a1a1a; text-align: center; color: #6b7280; font-size: 0.85rem; }
+        footer a { color: #06b6d4; text-decoration: none; }
+
+        @media (max-width: 640px) {
+            .hero h1 { font-size: 1.75rem; }
+            .pricing-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <div class="logo">Future<span>Craft</span></div>
+            <div class="nav-links">
+                <a href="https://futurecraft.vercel.app">首页</a>
+                <a href="https://github.com/shengdabai/futurecraft">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <h1>选择你的职业探索方案</h1>
+            <p>从免费 Soul Scan 到 1:1 职业咨询，每一步都为你量身定制。</p>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <h3>Free</h3>
+                <div class="price">¥0</div>
+                <ul>
+                    <li>基础 Soul Scan 性格分析</li>
+                    <li>5 个职业探索名额</li>
+                    <li>基础职业模拟场景</li>
+                    <li>基础技能树</li>
+                    <li>AI 导师每日 3 次对话</li>
+                </ul>
+                <a href="https://futurecraft.vercel.app" class="btn btn-secondary">开始使用</a>
+            </div>
+
+            <div class="pricing-card featured">
+                <div class="badge">最受欢迎</div>
+                <h3>Pro</h3>
+                <div class="price">¥128<span>/年</span></div>
+                <p style="margin:-0.5rem 0 1rem;color:#a3a3a3;font-size:0.9rem;">或 ¥18/月 · 在 iOS App 内订阅,价格以 App Store 显示为准</p>
+                <ul>
+                    <li>完整 Soul Scan + RPG 角色</li>
+                    <li>无限职业探索</li>
+                    <li>完整职业模拟 + 深度反馈</li>
+                    <li>完整技能树 + XP 系统</li>
+                    <li>AI 导师无限对话 + Boss 战</li>
+                    <li>人生模拟器</li>
+                </ul>
+                <a href="mailto:contact@zturnsgo.com" class="btn btn-primary">联系我们开通</a>
+            </div>
+
+            <div class="pricing-card">
+                <h3>Premium</h3>
+                <div class="price">¥299<span>/年</span></div>
+                <ul>
+                    <li>包含所有 Pro 功能</li>
+                    <li>导师推荐学习路径</li>
+                    <li>1:1 职业咨询（每季度 2 次）</li>
+                    <li>职业数据深度报告</li>
+                    <li>优先技术支持</li>
+                </ul>
+                <a href="mailto:contact@zturnsgo.com" class="btn btn-secondary">联系我们</a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Built with ❤️ by <a href="https://zturnsgo.com">Z Turns Go</a></p>
+            <p style="margin-top:8px">MIT License · <a href="https://github.com/shengdabai/futurecraft">GitHub</a></p>
+        </div>
+    </footer>
+</body>
+</html>

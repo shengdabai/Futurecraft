@@ -141,7 +141,7 @@ struct StatItem: View {
                     .stroke(Color.gray.opacity(0.3), lineWidth: 4)
                 Circle()
                     .trim(from: 0, to: CGFloat(value) / 100.0)
-                    .stroke(Color.purple, lineWidth: 4, lineCap: .round)
+                    .stroke(Color.purple, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Text("\(value)")
                     .font(.caption2)
