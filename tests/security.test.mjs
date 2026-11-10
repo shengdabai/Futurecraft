@@ -148,16 +148,28 @@ test('persistent auth rejects malformed credentials before storage and hides int
 
 test('database TLS verifies certificates and strips URL options that could override verification', async () => {
     const { databasePoolOptions } = await load('api/lib/db-config.ts');
+    const { Client } = createRequire(new URL('../api/package.json', import.meta.url))('pg');
     for (const url of ['postgres://user:pass@db.neon.tech/app',
         'postgres://user:pass@db.example/app?sslmode=require',
+        'postgres://user:pass@db.example/app?sslmode=verify-ca',
+        'postgres://user:pass@db.example/app?sslmode=verify-full',
+        'postgres://user:pass@db.example/app?sslmode=prefer',
         'postgres://user:pass@db.example/app?sslmode=no-verify',
-        'postgres://user:pass@db.example/app?ssl=true']) {
+        'postgres://user:pass@db.example/app?ssl=true',
+        'postgres://user:pass@db.example/app?ssl=1',
+        'postgres://user:pass@db.example/app?ssl=1&sslmode=disable',
+        'postgres://user:pass@db.example/app?ssl=0&sslmode=require']) {
         const options = databasePoolOptions(url);
-        assert.equal(options.ssl.rejectUnauthorized, true);
+        assert.equal(options.ssl.rejectUnauthorized, true, url);
+        assert.equal(new Client(options).ssl.rejectUnauthorized, true, url);
         assert.equal(new URL(options.connectionString).searchParams.has('sslmode'), false);
         assert.equal(new URL(options.connectionString).searchParams.has('ssl'), false);
     }
-    assert.equal(databasePoolOptions('postgres://user:neon@localhost/app?sslmode=disable').ssl, false);
+    for (const query of ['', '?ssl=0', '?ssl=false', '?sslmode=disable', '?ssl=0&sslmode=disable']) {
+        const options = databasePoolOptions(`postgres://user:pass@localhost/app${query}`);
+        assert.equal(options.ssl, false, query);
+        assert.equal(new Client(options).ssl, false, query);
+    }
 });
 
 test('public health returns only status and closes the pool on both success and failure', async () => {
