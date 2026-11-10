@@ -123,7 +123,7 @@ class AuthManager: NSObject, ObservableObject {
     /// 尝试恢复已有会话
     func tryRestoreSession(region: Region) async -> User? {
         guard let accessToken = KeychainManager.shared.getAccessToken(),
-              let userId = KeychainManager.shared.getUserId() else {
+              KeychainManager.shared.getUserId() != nil else {
             return nil
         }
         
@@ -135,12 +135,31 @@ class AuthManager: NSObject, ObservableObject {
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            var (data, response) = try await URLSession.shared.data(for: request)
+
+            if (response as? HTTPURLResponse)?.statusCode == 401 {
+                guard let refreshToken = KeychainManager.shared.getRefreshToken(),
+                      let refreshURL = URL(string: "\(baseURL)/auth/refresh") else { return nil }
+                var refreshRequest = URLRequest(url: refreshURL)
+                refreshRequest.httpMethod = "POST"
+                refreshRequest.setValue("Bearer \(refreshToken)", forHTTPHeaderField: "Authorization")
+                let (refreshData, refreshResponse) = try await URLSession.shared.data(for: refreshRequest)
+                guard let httpRefreshResponse = refreshResponse as? HTTPURLResponse else { return nil }
+                if httpRefreshResponse.statusCode == 401 || httpRefreshResponse.statusCode == 403 {
+                    KeychainManager.shared.clearAllTokens()
+                    return nil
+                }
+                guard (200...299).contains(httpRefreshResponse.statusCode) else { return nil }
+                struct RefreshResponse: Decodable { let accessToken: String }
+                let refreshed = try JSONDecoder().decode(RefreshResponse.self, from: refreshData)
+                _ = KeychainManager.shared.saveAccessToken(refreshed.accessToken)
+                request.setValue("Bearer \(refreshed.accessToken)", forHTTPHeaderField: "Authorization")
+                (data, response) = try await URLSession.shared.data(for: request)
+            }
             
             guard let httpResponse = response as? HTTPURLResponse,
                   (200...299).contains(httpResponse.statusCode) else {
-                // Token 无效，清除
-                KeychainManager.shared.clearAllTokens()
+                // 只在 refresh 被明确拒绝时清除令牌；暂时故障保留恢复凭据。
                 return nil
             }
             
