@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { generateAccessToken, generateRefreshToken, authMiddleware } from '../middleware/auth.js';
+import { generateAccessToken, generateRefreshToken, authMiddleware, optionalOwnershipMiddleware } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import { verifyAppleIdentityToken } from '../services/appleAuthService.js';
 import * as userRepo from '../db/userRepository.js';
@@ -50,16 +50,11 @@ router.post('/apple', authLimiter, async (req: Request, res: Response) => {
             const claims = await verifyAppleIdentityToken(identityToken, APPLE_BUNDLE_ID);
             appleUserId = claims.sub;
             verifiedEmail = claims.email;
-        } catch (verifyError) {
-            // 开发环境下允许降级（方便本地测试）
-            if (process.env.NODE_ENV === 'development') {
-                appleUserId = `apple_dev_${Buffer.from(identityToken).toString('base64url').substring(0, 20)}`;
-            } else {
-                return res.status(401).json({
-                    error: 'InvalidToken',
-                    message: 'Apple 身份验证失败',
-                });
-            }
+        } catch {
+            return res.status(401).json({
+                error: 'InvalidToken',
+                message: 'Apple 身份验证失败',
+            });
         }
 
         // 查找或创建用户
@@ -119,7 +114,7 @@ router.post('/apple', authLimiter, async (req: Request, res: Response) => {
  * POST /auth/guest
  * 游客登录
  */
-router.post('/guest', authLimiter, async (req: Request, res: Response) => {
+router.post('/guest', authLimiter, optionalOwnershipMiddleware, async (req: Request, res: Response) => {
     try {
         const parseResult = guestLoginSchema.safeParse(req.body);
         if (!parseResult.success) {
@@ -134,11 +129,12 @@ router.post('/guest', authLimiter, async (req: Request, res: Response) => {
         // 如果提供了 guestId，尝试查找已有用户
         const existingUser = guestId ? userRepo.findById(guestId) : undefined;
 
-        // 防止账户劫持：如果用户存在但不是 guest，拒绝访问
-        if (existingUser && existingUser.is_guest !== 1) {
+        // An account ID identifies a guest; only its access token proves ownership.
+        if (existingUser && (existingUser.is_guest !== 1 || req.user?.isGuest !== true
+            || req.user.userId !== existingUser.id)) {
             return res.status(403).json({
                 error: 'Forbidden',
-                message: '该账户不是游客账户，请使用正确的登录方式',
+                message: '无法恢复游客账户，请提供有效的账户凭证',
             });
         }
 

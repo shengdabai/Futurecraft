@@ -4,7 +4,8 @@
  */
 
 import { Pool } from 'pg';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
+import { databasePoolOptions } from './db-config';
 
 // 获取数据库连接字符串
 function getConnectionString(): string {
@@ -26,14 +27,8 @@ let pool: Pool | null = null;
 function getPool(): Pool {
   if (!pool) {
     const connectionString = getConnectionString();
-    // Neon 数据库需要 SSL，但可以使用 rejectUnauthorized: false
     pool = new Pool({
-      connectionString,
-      ssl: connectionString.includes('neon.tech') || connectionString.includes('neon') 
-        ? { rejectUnauthorized: false }
-        : connectionString.includes('sslmode=require') || connectionString.includes('sslmode=prefer')
-        ? { rejectUnauthorized: false }
-        : false,
+      ...databasePoolOptions(connectionString),
       max: 5,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
@@ -368,7 +363,7 @@ export function getDatabase(): Database {
  * 生成 UUID
  */
 export function generateId(): string {
-  return uuidv4();
+  return randomUUID();
 }
 
 /**

@@ -90,9 +90,14 @@ class AuthManager: NSObject, ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // 如果有之前的 guest ID，发送它以恢复会话
+        // 恢复游客账户时附上该账户的令牌（优先长期有效的 refresh token），不能仅凭账户 ID 登录。
         let existingGuestId = UserDefaults.standard.string(forKey: Constants.Keys.guestId)
-        let body: [String: Any] = ["guestId": existingGuestId ?? ""]
+        var body: [String: Any] = ["region": region.rawValue]
+        if let guestId = existingGuestId,
+           let token = KeychainManager.shared.getRefreshToken() ?? KeychainManager.shared.getAccessToken() {
+            body["guestId"] = guestId
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -109,6 +114,7 @@ class AuthManager: NSObject, ObservableObject {
         
         // 安全存储 Token
         _ = KeychainManager.shared.saveAccessToken(authResponse.accessToken)
+        _ = KeychainManager.shared.saveRefreshToken(authResponse.refreshToken)
         _ = KeychainManager.shared.saveUserId(authResponse.user.id)
         
         return authResponse
@@ -117,7 +123,7 @@ class AuthManager: NSObject, ObservableObject {
     /// 尝试恢复已有会话
     func tryRestoreSession(region: Region) async -> User? {
         guard let accessToken = KeychainManager.shared.getAccessToken(),
-              let userId = KeychainManager.shared.getUserId() else {
+              KeychainManager.shared.getUserId() != nil else {
             return nil
         }
         
@@ -129,12 +135,31 @@ class AuthManager: NSObject, ObservableObject {
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            var (data, response) = try await URLSession.shared.data(for: request)
+
+            if (response as? HTTPURLResponse)?.statusCode == 401 {
+                guard let refreshToken = KeychainManager.shared.getRefreshToken(),
+                      let refreshURL = URL(string: "\(baseURL)/auth/refresh") else { return nil }
+                var refreshRequest = URLRequest(url: refreshURL)
+                refreshRequest.httpMethod = "POST"
+                refreshRequest.setValue("Bearer \(refreshToken)", forHTTPHeaderField: "Authorization")
+                let (refreshData, refreshResponse) = try await URLSession.shared.data(for: refreshRequest)
+                guard let httpRefreshResponse = refreshResponse as? HTTPURLResponse else { return nil }
+                if httpRefreshResponse.statusCode == 401 || httpRefreshResponse.statusCode == 403 {
+                    KeychainManager.shared.clearAllTokens()
+                    return nil
+                }
+                guard (200...299).contains(httpRefreshResponse.statusCode) else { return nil }
+                struct RefreshResponse: Decodable { let accessToken: String }
+                let refreshed = try JSONDecoder().decode(RefreshResponse.self, from: refreshData)
+                _ = KeychainManager.shared.saveAccessToken(refreshed.accessToken)
+                request.setValue("Bearer \(refreshed.accessToken)", forHTTPHeaderField: "Authorization")
+                (data, response) = try await URLSession.shared.data(for: request)
+            }
             
             guard let httpResponse = response as? HTTPURLResponse,
                   (200...299).contains(httpResponse.statusCode) else {
-                // Token 无效，清除
-                KeychainManager.shared.clearAllTokens()
+                // 只在 refresh 被明确拒绝时清除令牌；暂时故障保留恢复凭据。
                 return nil
             }
             

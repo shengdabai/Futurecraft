@@ -29,9 +29,9 @@ interface RegisterBody {
 
 // 登录处理
 async function handleLogin(req: VercelRequest, res: VercelResponse) {
-    const { username, password } = req.body as LoginBody;
+    const { username, password } = (req.body ?? {}) as LoginBody;
 
-    if (!username || !password) {
+    if (!isValidUsername(username) || !isValidPassword(password)) {
         return sendError(res, 'INVALID_REQUEST', '用户名和密码不能为空', 400);
     }
 
@@ -53,7 +53,7 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
 
 // 注册处理
 async function handleRegister(req: VercelRequest, res: VercelResponse) {
-    const { username, password } = req.body as RegisterBody;
+    const { username, password } = (req.body ?? {}) as RegisterBody;
 
     if (!username || !password) {
         return sendError(res, 'INVALID_REQUEST', '用户名和密码不能为空', 400);
@@ -141,6 +141,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             name: error?.name,
         });
         // 确保返回 JSON 格式的错误
-        return sendError(res, 'INTERNAL_ERROR', error?.message || '服务器内部错误', 500);
+        return sendPredefinedError(res, 'INTERNAL_ERROR');
     }
 }
