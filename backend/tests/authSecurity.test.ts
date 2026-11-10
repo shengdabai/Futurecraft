@@ -44,17 +44,21 @@ async function post(path: string, body: unknown, token?: string) {
         body: JSON.stringify(body) });
 }
 
-test('guest restoration requires the same guest access token', async () => {
+test('guest restoration requires a token of the same guest account', async () => {
     const first = await (await post('guest', {})).json();
     const second = await (await post('guest', {})).json();
     const body = { guestId: first.user.id };
     assert.equal((await post('guest', body)).status, 403);
     assert.equal((await post('guest', body, second.accessToken)).status, 403);
-    assert.equal((await post('guest', body, first.refreshToken)).status, 403);
+    assert.equal((await post('guest', body, second.refreshToken)).status, 403);
     assert.equal((await post('guest', body, 'invalid')).status, 403);
     const restored = await post('guest', body, first.accessToken);
     assert.equal(restored.status, 200);
     assert.equal((await restored.json()).user.id, first.user.id);
+    // Returning guests usually hold only a live refresh token (access tokens last 15 minutes).
+    const viaRefresh = await post('guest', body, first.refreshToken);
+    assert.equal(viaRefresh.status, 200);
+    assert.equal((await viaRefresh.json()).user.id, first.user.id);
 });
 
 test('JWT middleware rejects wrong algorithms, missing claims, expired tokens and refresh tokens', async () => {

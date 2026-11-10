@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { generateAccessToken, generateRefreshToken, authMiddleware, optionalAuthMiddleware } from '../middleware/auth.js';
+import { generateAccessToken, generateRefreshToken, authMiddleware, optionalOwnershipMiddleware } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import { verifyAppleIdentityToken } from '../services/appleAuthService.js';
 import * as userRepo from '../db/userRepository.js';
@@ -114,7 +114,7 @@ router.post('/apple', authLimiter, async (req: Request, res: Response) => {
  * POST /auth/guest
  * 游客登录
  */
-router.post('/guest', authLimiter, optionalAuthMiddleware, async (req: Request, res: Response) => {
+router.post('/guest', authLimiter, optionalOwnershipMiddleware, async (req: Request, res: Response) => {
     try {
         const parseResult = guestLoginSchema.safeParse(req.body);
         if (!parseResult.success) {

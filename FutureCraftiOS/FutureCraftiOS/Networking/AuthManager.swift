@@ -90,10 +90,11 @@ class AuthManager: NSObject, ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // 恢复游客账户时同时提供访问令牌，不能仅凭账户 ID 登录。
+        // 恢复游客账户时附上该账户的令牌（优先长期有效的 refresh token），不能仅凭账户 ID 登录。
         let existingGuestId = UserDefaults.standard.string(forKey: Constants.Keys.guestId)
         var body: [String: Any] = ["region": region.rawValue]
-        if let guestId = existingGuestId, let token = KeychainManager.shared.getAccessToken() {
+        if let guestId = existingGuestId,
+           let token = KeychainManager.shared.getRefreshToken() ?? KeychainManager.shared.getAccessToken() {
             body["guestId"] = guestId
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }

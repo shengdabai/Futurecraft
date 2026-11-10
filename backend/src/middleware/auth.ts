@@ -96,6 +96,26 @@ export const optionalAuthMiddleware = (req: Request, res: Response, next: NextFu
 };
 
 /**
+ * Like optionalAuthMiddleware, but also accepts a refresh token. Only for proving
+ * ownership of an existing account (guest restore): a refresh token can already
+ * mint access tokens via /auth/refresh, so this grants nothing new, and it keeps
+ * returning guests working after their 15-minute access token has expired.
+ */
+export const optionalOwnershipMiddleware = (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+            req.user = verifyToken(authHeader.substring(7));
+        } catch {
+            // Token 无效，忽略
+        }
+    }
+
+    next();
+};
+
+/**
  * 生成 Access Token（短过期 15 分钟）
  */
 export const generateAccessToken = (
