@@ -12,6 +12,17 @@ export interface JwtPayload {
     exp?: number;
 }
 
+function verifyToken(token: string): JwtPayload {
+    const decoded = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] });
+    if (typeof decoded === 'string' || typeof decoded.userId !== 'string' || !decoded.userId
+        || typeof decoded.isGuest !== 'boolean' || typeof decoded.region !== 'string'
+        || typeof decoded.exp !== 'number'
+        || (decoded.type !== 'access' && decoded.type !== 'refresh')) {
+        throw new Error('Invalid token claims');
+    }
+    return decoded as JwtPayload;
+}
+
 // 扩展 Express Request 类型
 declare global {
     namespace Express {
@@ -38,10 +49,10 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     const token = authHeader.substring(7); // Remove "Bearer "
 
     try {
-        const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
+        const decoded = verifyToken(token);
 
         // 普通路由不接受 refresh token（除 /auth/refresh 端点外由路由自行检查）
-        if (decoded.type === 'refresh' && !req.path.endsWith('/refresh')) {
+        if (decoded.type === 'refresh' && !(req.method === 'POST' && req.path === '/refresh')) {
             return res.status(401).json({
                 error: 'InvalidTokenType',
                 message: '不能使用 refresh token 访问此接口',
@@ -74,8 +85,8 @@ export const optionalAuthMiddleware = (req: Request, res: Response, next: NextFu
     if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         try {
-            const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
-            req.user = decoded;
+            const decoded = verifyToken(token);
+            if (decoded.type === 'access') req.user = decoded;
         } catch {
             // Token 无效，忽略
         }

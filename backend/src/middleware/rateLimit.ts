@@ -109,5 +109,5 @@ setInterval(() => {
             userRequestCounts.delete(userId);
         }
     }
-}, 60 * 1000); // 每分钟清理一次
+}, 60 * 1000).unref(); // 每分钟清理一次，不阻止进程正常退出
 

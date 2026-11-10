@@ -90,9 +90,13 @@ class AuthManager: NSObject, ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // 如果有之前的 guest ID，发送它以恢复会话
+        // 恢复游客账户时同时提供访问令牌，不能仅凭账户 ID 登录。
         let existingGuestId = UserDefaults.standard.string(forKey: Constants.Keys.guestId)
-        let body: [String: Any] = ["guestId": existingGuestId ?? ""]
+        var body: [String: Any] = ["region": region.rawValue]
+        if let guestId = existingGuestId, let token = KeychainManager.shared.getAccessToken() {
+            body["guestId"] = guestId
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -109,6 +113,7 @@ class AuthManager: NSObject, ObservableObject {
         
         // 安全存储 Token
         _ = KeychainManager.shared.saveAccessToken(authResponse.accessToken)
+        _ = KeychainManager.shared.saveRefreshToken(authResponse.refreshToken)
         _ = KeychainManager.shared.saveUserId(authResponse.user.id)
         
         return authResponse
