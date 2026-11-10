@@ -38,6 +38,12 @@
   },
   "private": true,
   "overrides": {
-    "markdown-it": "^14.3.3"
+    "markdown-it": "^14.3.3",
+    "@expo/fingerprint": {
+      "minimatch@^10.2.2": "11.0.1"
+    },
+    "glob": {
+      "minimatch@^10.2.2": "11.0.1"
+    }
   }
 }
