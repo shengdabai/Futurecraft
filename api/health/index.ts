@@ -4,53 +4,39 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Pool } from 'pg';
+import { databasePoolOptions } from '../lib/db-config';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    const envVars = {
-        POSTGRES_URL: !!process.env.POSTGRES_URL,
-        POSTGRES_URL_NO_SSL: !!process.env.POSTGRES_URL_NO_SSL,
-        DATABASE_URL: !!process.env.DATABASE_URL,
-        POSTGRES_HOST: !!process.env.POSTGRES_HOST,
-        GEMINI_API_KEY: !!process.env.GEMINI_API_KEY,
-        GETNOTES_TOKEN: !!process.env.GETNOTES_TOKEN,
-        JWT_SECRET: !!process.env.JWT_SECRET,
-    };
-
     // 尝试连接数据库
     let dbStatus = 'not_tested';
-    let dbError = '';
 
     const connectionString = process.env.POSTGRES_URL || process.env.POSTGRES_URL_NO_SSL || process.env.DATABASE_URL;
 
     if (connectionString) {
+        let pool: Pool | undefined;
         try {
-            const pool = new Pool({
-                connectionString,
-                ssl: { rejectUnauthorized: false },
+            pool = new Pool({
+                ...databasePoolOptions(connectionString),
                 connectionTimeoutMillis: 5000,
             });
 
-            const result = await pool.query('SELECT NOW() as time');
+            await pool.query('SELECT NOW() as time');
             dbStatus = 'connected';
-            await pool.end();
-        } catch (error: any) {
+        } catch {
             dbStatus = 'error';
-            dbError = error.message;
+        } finally {
+            try { await pool?.end(); } catch { dbStatus = 'error'; }
         }
     } else {
         dbStatus = 'no_connection_string';
     }
 
-    return res.status(200).json({
-        status: 'ok',
+    const healthy = dbStatus === 'connected';
+    return res.status(healthy ? 200 : 503).json({
+        status: healthy ? 'ok' : 'unavailable',
         timestamp: new Date().toISOString(),
-        environment: {
-            nodeVersion: process.version,
-            envVarsConfigured: envVars,
-        },
         database: {
             status: dbStatus,
-            error: dbError || undefined,
         },
     });
 }

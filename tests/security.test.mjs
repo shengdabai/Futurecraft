@@ -9,7 +9,7 @@ import { dirname, resolve } from 'node:path';
 const require = createRequire(new URL('../backend/package.json', import.meta.url));
 const jwt = require('jsonwebtoken');
 const secret = 'fixture-only-signing-key-at-least-32-characters';
-async function load(entry, { env = {}, mocks = {}, clock = Date } = {}) {
+async function load(entry, { env = {}, mocks = {}, clock = Date, globals = {} } = {}) {
     const source = await readFile(entry, 'utf8');
     const result = await build({ stdin: { contents: source + (entry === 'api/index.ts' ? '\nexport const testUsers = users;' : ''),
         loader: 'ts', sourcefile: entry, resolveDir: dirname(resolve(entry)) }, bundle: true, write: false,
@@ -23,7 +23,7 @@ async function load(entry, { env = {}, mocks = {}, clock = Date } = {}) {
     const module = { exports: {} };
     runInNewContext(result.outputFiles[0].text, { module, exports: module.exports, require,
         Buffer, URL, Date: clock, process: { env }, console: { log() {}, warn() {}, error() {} },
-        fetch() { throw new Error('External requests are forbidden in tests'); } });
+        fetch() { throw new Error('External requests are forbidden in tests'); }, ...globals });
     return module.exports;
 }
 function response() {
@@ -124,6 +124,63 @@ test('guest endpoint resolves dependencies and hashes passwords with fixture-onl
         });`,
     } });
     assert.equal((await call(handler, 'auth/guest', {})).code, 201);
+});
+
+test('persistent auth rejects malformed credentials before storage and hides internal errors', async () => {
+    const { default: handler } = await load('api/auth/index.ts', { mocks: {
+        '../lib/db': `export const generateId=()=> 'fixture'; export const getDatabase=()=>{
+            throw Error('private database diagnostic');
+        };`,
+    } });
+    for (const action of ['login', 'register']) {
+        for (const body of [undefined, null, {}, { username: {}, password: 123 }]) {
+            const res = response();
+            await handler({ method: 'POST', query: { action }, body }, res);
+            assert.equal(res.code, 400);
+        }
+        const res = response();
+        await handler({ method: 'POST', query: { action },
+            body: { username: 'tester', password: 'fixture-password' } }, res);
+        assert.equal(res.code, 500);
+        assert.equal(JSON.stringify(res.body).includes('private database diagnostic'), false);
+    }
+});
+
+test('database TLS verifies certificates and strips URL options that could override verification', async () => {
+    const { databasePoolOptions } = await load('api/lib/db-config.ts');
+    for (const url of ['postgres://user:pass@db.neon.tech/app',
+        'postgres://user:pass@db.example/app?sslmode=require',
+        'postgres://user:pass@db.example/app?sslmode=no-verify',
+        'postgres://user:pass@db.example/app?ssl=true']) {
+        const options = databasePoolOptions(url);
+        assert.equal(options.ssl.rejectUnauthorized, true);
+        assert.equal(new URL(options.connectionString).searchParams.has('sslmode'), false);
+        assert.equal(new URL(options.connectionString).searchParams.has('ssl'), false);
+    }
+    assert.equal(databasePoolOptions('postgres://user:neon@localhost/app?sslmode=disable').ssl, false);
+});
+
+test('public health returns only status and closes the pool on both success and failure', async () => {
+    for (const fail of [false, true]) {
+        let closed = 0;
+        const { default: handler } = await load('api/health/index.ts', {
+            globals: { recordClose() { closed++; } },
+            env: { DATABASE_URL: 'postgres://user:pass@db.example/app?sslmode=require' }, mocks: {
+                pg: `export class Pool {
+                    constructor(options) { if(options.ssl.rejectUnauthorized !== true) throw Error('bad TLS'); }
+                    async query() { ${fail ? "throw Error('private diagnostic');" : ''} }
+                    async end() { recordClose(); }
+                }`,
+            },
+        });
+        const res = response();
+        await handler({}, res);
+        assert.equal(res.code, fail ? 503 : 200);
+        assert.deepEqual(Object.keys(res.body).sort(), ['database', 'status', 'timestamp']);
+        assert.deepEqual(Object.keys(res.body.database), ['status']);
+        assert.equal(JSON.stringify(res.body).includes('private diagnostic'), false);
+        assert.equal(closed, 1);
+    }
 });
 
 // main's IAP route (server catalog, GK-06) replaced this branch's 503 stub in the merge. Development mode
