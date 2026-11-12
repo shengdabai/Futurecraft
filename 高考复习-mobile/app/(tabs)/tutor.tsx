@@ -13,6 +13,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ActivityIndicator,
+    type ScrollViewInstance,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '@/services/api';
@@ -62,7 +63,7 @@ export default function TutorScreen() {
     const [topic, setTopic] = useState('');
     const [showSubjects, setShowSubjects] = useState(false);
 
-    const scrollViewRef = useRef<ScrollView>(null);
+    const scrollViewRef = useRef<ScrollViewInstance>(null);
 
     // 滚动到底部
     useEffect(() => {

@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#3b82f6"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -47,6 +42,14 @@
         "expo-image-picker",
         {
           "photosPermission": "允许高考冲刺助手访问相册选择题目图片"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#3b82f6"
         }
       ]
     ],

@@ -156,7 +156,7 @@ export default function MistakesScreen() {
               <Text style={styles.emptyText}>还没有错题记录</Text>
               <Text style={styles.emptySubtext}>去「AI 拍题」添加错题吧</Text>
             </View>
-          ) : null
+          ) : undefined
         }
       />
     </View>
